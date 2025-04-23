@@ -66,6 +66,11 @@ class LibraryGUI:
                 text="Currently borrowed books",
                 command=self.show_borrowed_books,
             ),
+            "waitlists": ttk.Button(
+                self.mainframe,
+                text="Waitlists",
+                command=self.show_waitlists,
+            ),
             "borrow_history": ttk.Button(
                 self.mainframe,
                 text="Show borrow history",
@@ -125,7 +130,18 @@ class LibraryGUI:
                     text="Currently borrowed books:",
                 ),
                 "book_list": ttk.Label(
-                    self.mainframe, text="\n".join(self.library.user.borrowed_books)
+                    self.mainframe,
+                    text="\n".join(self.library.user.borrowed_books),
+                ),
+            },
+            "waitlists": {
+                "label": ttk.Label(
+                    self.mainframe,
+                    text="Waitlists:",
+                ),
+                "waitlist_list": ttk.Label(
+                    self.mainframe,
+                    text="\n".join(self.library.user.waitlists),
                 ),
             },
             "borrow_history": {
@@ -161,6 +177,14 @@ class LibraryGUI:
             widget.grid(column=COLUMN, row=i)
 
         self.action_results["borrowed_books"]["book_list"].grid_configure(
+            rowspan=len(self.action_buttons) - 1
+        )
+
+        # Waitlists
+        for i, widget in enumerate(self.action_results["waitlists"].values()):
+            widget.grid(column=COLUMN, row=i)
+
+        self.action_results["waitlists"]["waitlist_list"].grid_configure(
             rowspan=len(self.action_buttons) - 1
         )
 
@@ -225,6 +249,21 @@ class LibraryGUI:
 
     def show_available_books(self):
         pass
+
+    def show_waitlists(self):
+        self.hide_other_action_results("waitlists")
+        if len(self.action_results["waitlists"]["label"].grid_info()) == 0:
+            for widget in self.action_results["waitlists"].values():
+                self.update_waitlists()
+                widget.grid()
+        else:
+            for widget in self.action_results["waitlists"].values():
+                widget.grid_remove()
+
+    def update_waitlists(self):
+        self.action_results["waitlists"]["waitlist_list"].configure(
+            text="\n".join(self.library.user.waitlists)
+        )
 
     def hide_other_action_results(self, dont_hide):
         for key, action_result in self.action_results.items():

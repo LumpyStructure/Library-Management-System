@@ -24,12 +24,11 @@ class Library:
         if not os.path.isdir(f"{self.PATH}"):
             os.makedirs(f"{self.PATH}/Users")
             os.makedirs(f"{self.PATH}/Books")
+            os.makedirs(f"{self.PATH}/Waitlists")
 
         if self.books == None:
-            self.load_books_from_file()
+            self.load_books()
 
-        for book in self.books.keys():
-            self.waitlists.update(self.create_waitlist(book))
         if users != None:
             for username, password in users.items():
                 self.users.update({username: User(username, password)})
@@ -46,6 +45,10 @@ class Library:
                         )
                     }
                 )
+
+        if not self.load_waitlists():
+            for book in self.books.keys():
+                self.waitlists.update(self.create_waitlist(book))
 
     def menu(self):
         while True:
@@ -112,21 +115,38 @@ class Library:
     def get_user(self, username) -> User:
         return self.users[username]
 
-    def borrow_book(self, book_name: str, user: User) -> int:
+    def borrow_book(
+        self,
+        book_name: str,
+        user: User,
+        check: bool = False,
+        is_from_waitlist: bool = False,
+    ) -> int:
         """Allows user to borrow book if no waitlist, book is available, and user is not over borrow limit. Returns 0 in this case.
 
         If book is not available, adds the user to a waitlist and returns 1.
 
         If user is over borrow limit, returns 2.
 
-        If book name is invalid, returns 3"""
+        If book name is invalid, returns 3
+
+        If check is True, no borrowing commands are executed, only state values are returned
+
+        If is_from_waitlist is True, book will be removed from the user's list of waitlists
+        """
         try:
             if self.books[book_name] == 0:
-                self.add_user_to_waitlist(book_name, user)
+                if not check:
+                    self.add_user_to_waitlist(book_name, user)
                 return 1
             else:
-                if user.borrow_book(book_name):
-                    self.books[book_name] -= 1
+                if user.borrow_book(book_name, check=True):
+                    if not check:
+                        user.borrow_book(book_name)
+                        self.books[book_name] -= 1
+
+                    if is_from_waitlist:
+                        user.waitlists.remove(book_name)
                     return 0
                 else:
                     return 2
@@ -156,31 +176,38 @@ class Library:
 
     def create_waitlist(self, book_name: str) -> dict[str, DynamicQueue]:
         """Returns a dictionary entry waitlist for a given book"""
-        return {book_name: DynamicQueue(f"{PATH}_{book_name}")}
+        return {book_name: DynamicQueue(f"{self.PATH}/{book_name}")}
 
     def add_user_to_waitlist(self, book_name: str, user: User):
         """Add user to a waitlist for the given book"""
         self.waitlists[book_name].enqueue(user)
+        user.waitlists.append(book_name)
 
     def decrement_waitlist(self, book_name: str):
-        """Gives a returned book to the next user in the waitlist if a waitlist has users"""
+        """Gives a returned book to the next user in the waitlist if a waitlist has users.
+
+        If the next user in the waitlist cannot borrow the book, send them to the back of the waitlist queue
+        """
         if self.waitlist_has_users(book_name):
             waitlist = self.waitlists[book_name]
             # Removes users from the waitlist until a user successfully borrows a book
-            while True:
+            for _ in range(len(waitlist.queue)):
                 waitlist_user = waitlist.dequeue()
                 if waitlist_user != None:
-                    if self.borrow_book(book_name, waitlist_user):
+                    if self.borrow_book(book_name, waitlist_user, check=True) == 0:
+                        self.borrow_book(
+                            book_name, waitlist_user, is_from_waitlist=True
+                        )
                         break
                     else:
-                        continue
+                        self.waitlists[book_name].enqueue(waitlist_user)
                 else:
                     break
 
     def print_available_books(self):
         """Prints book name, if available & waitlist size if applicable"""
 
-    def save_available_books_to_file(self):
+    def save_books(self):
         """Write book names & number available to a file, using :: to separate book name & number"""
         save_string = ""
         for book in self.books.items():
@@ -188,7 +215,7 @@ class Library:
         with open(f"{self.PATH}/Books/books.txt", mode="w") as file:
             file.write(save_string)
 
-    def load_books_from_file(self):
+    def load_books(self):
         """Load books from file and store them in current books"""
         with open(f"{self.PATH}/Books/books.txt", mode="r") as file:
             lines = file.readlines()
@@ -197,7 +224,39 @@ class Library:
         for datum in book_data:
             self.books.update({datum[0]: int(datum[1])})
 
+    def save_waitlists(self):
+        save_string = ""
+        for waitlist in self.waitlists.items():
+            save_string += f"{":::".join([waitlist[0], "::".join([waitlist[1].queue[i].username for i in range(len(waitlist[1].queue))])])}\n"
+        with open(f"{self.PATH}/Waitlists/waitlists.txt", mode="w") as file:
+            file.write(save_string)
+
+    def load_waitlists(self) -> bool:
+        """Loads waitlists from a file, returns True is successful, and False if not"""
+        try:
+            with open(f"{self.PATH}/Waitlists/waitlists.txt", mode="r") as file:
+                lines = file.readlines()
+        except FileNotFoundError:
+            return False
+        self.waitlists = {}
+        for line in lines:
+            line = line.strip().split(":::")
+            waitlist_users = []
+            for entry in line[1].split("::"):
+                if entry != "":
+                    waitlist_users.append(self.users[entry])
+            self.waitlists.update(
+                {
+                    line[0]: DynamicQueue(
+                        f"{self.PATH}/{line[0]}",
+                        waitlist_users,
+                    )
+                }
+            )
+        return True
+
     def quit_library(self):
         if self.user != None:
             self.user.save_to_file()
-        self.save_available_books_to_file()
+        self.save_books()
+        self.save_waitlists()

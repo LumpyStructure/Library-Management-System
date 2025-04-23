@@ -17,15 +17,20 @@ class User:
         else:
             self.password = password
             self.borrowed_books = []
+            self.waitlists = []
             self.borrow_limit = borrow_limit
             self.borrow_history = DynamicStack()
 
-    def borrow_book(self, book_name) -> bool:
+    def borrow_book(self, book_name: str, check: bool = False) -> bool:
         """Adds the given book name to the user's list of borrowed books, if not over their borrow limit.
-        Returns True if successful and False if not"""
+        Returns True if successful and False if not.
+
+        If check is true, no borrowing commands are executed, only state values are returned.
+        """
         if len(self.borrowed_books) < self.borrow_limit:
-            self.borrowed_books.append(book_name)
-            self.borrow_history.push_stack(book_name)
+            if not check:
+                self.borrowed_books.append(book_name)
+                self.borrow_history.push_stack(book_name)
             return True
         else:
             return False
@@ -40,7 +45,7 @@ class User:
 
     def save_to_file(self):
         """Saves the username, password, borrow limit, current borrowed books and borrow history to a file named user's username"""
-        save_string = f"{self.username}\n{self.password}\n{self.borrow_limit}\n{"::".join(self.borrowed_books)}\n{"::".join(self.borrow_history.stack)}"
+        save_string = f"{self.username}\n{self.password}\n{self.borrow_limit}\n{"::".join(self.borrowed_books)}\n{"::".join(self.waitlists)}\n{"::".join(self.borrow_history.stack)}"
         with open(self.USER_FILE, mode="w") as file:
             file.write(save_string)
 
@@ -52,4 +57,5 @@ class User:
         self.password = lines[1].strip()
         self.borrow_limit = int(lines[2].strip())
         self.borrowed_books = list(lines[3].strip().split("::"))
-        self.borrow_history = DynamicStack(list(lines[4].strip().split("::")))
+        self.waitlists = list(lines[4].strip().split("::"))
+        self.borrow_history = DynamicStack(list(lines[5].strip().split("::")))
