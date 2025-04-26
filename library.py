@@ -53,7 +53,7 @@ class Library:
             password = input("Enter password:\n> ")
 
             if self.check_login(username, password):
-                user = self.get_user()
+                user = self.get_user(username)
                 print(f"\nWelcome {user.username}\n")
                 break
             else:
@@ -87,10 +87,13 @@ class Library:
                     print(f"Book name invalid")
             elif choice == 2:
                 book = input("Enter name of book:\n> ")
-                if self.return_book(book, user):
+                return_val = self.return_book(book, user)
+                if return_val == 0:
                     print("Book returned")
-                else:
-                    print("Return failed")
+                elif return_val == 1:
+                    print("Book not borrowed")
+                elif return_val == 2:
+                    print("Book name invalid")
             elif choice == 3:
                 print(user.borrowed_books)
             elif choice == 4:
