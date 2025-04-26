@@ -45,6 +45,7 @@ class LibraryGUI:
         self.library.user = self.library.users[login_screen.username.get()]
 
     def create_action_buttons(self):
+        """Create the buttons used by the user to execute operations such as borrowing & returning books"""
         self.action_buttons = {
             "browse_books": ttk.Button(
                 self.mainframe,
@@ -78,11 +79,15 @@ class LibraryGUI:
             ),
         }
 
+        # Arrange the buttons in a vertical stack
         for i, button in enumerate(self.action_buttons.values()):
             button.grid(column=1, row=i)
 
     def create_action_results(self):
-        COLUMN = 3
+        """Create the widgets that appear when the user pressed the corresponding action button"""
+        COLUMN = 3  # Column in which the widgets appear
+
+        # Set a minimum size for the column to prevent it from constantly changing size
         self.mainframe.grid_columnconfigure(COLUMN, minsize=200)
 
         # Entry variables
@@ -197,52 +202,80 @@ class LibraryGUI:
         )
 
     def borrow_book_gui(self):
+        """Toggle borrow book widgets"""
         self.hide_other_action_results("borrow_book")
+
+        # Check if the borow book widgets are not already visible
         if len(self.action_results["borrow_book"]["label"].grid_info()) == 0:
+            # Add each widget to grid (make it visible)
             for widget in self.action_results["borrow_book"].values():
                 widget.grid()
+
+            # Set the focus to the text entry
             self.action_results["borrow_book"]["entry"].focus()
+        # Hide the widgets if they are already showing
         else:
             for widget in self.action_results["borrow_book"].values():
                 widget.grid_remove()
 
     def return_book_gui(self):
+        """Toggle return book widgets"""
         self.hide_other_action_results("return_book")
+
+        # Check if the return book widgets are not already visible
         if len(self.action_results["return_book"]["label"].grid_info()) == 0:
+            # Add each widget to grid (make it visible)
             for widget in self.action_results["return_book"].values():
                 widget.grid()
+
+            # Set the focus to the text entry
             self.action_results["return_book"]["entry"].focus()
+            # TODO: make this work
             self.root.bind("<Return>", self.borrow_book)
+        # Hide the widgets if they are already showing
         else:
+            # TODO: as above
             self.root.unbind("<Return>")
             for widget in self.action_results["return_book"].values():
                 widget.grid_remove()
 
     def show_borrowed_books(self):
+        """Toggle currently borrowed books widgets"""
         self.hide_other_action_results("borrowed_books")
+
+        # Check if the widgets are not already visible
         if len(self.action_results["borrowed_books"]["label"].grid_info()) == 0:
             self.update_borrowed_books()
+            # Add each widget to grid (make it visible)
             for widget in self.action_results["borrowed_books"].values():
                 widget.grid()
+        # Hide the widgets if they are already showing
         else:
             for widget in self.action_results["borrowed_books"].values():
                 widget.grid_remove()
 
     def update_borrowed_books(self):
+        """Update the book list for the user's currently borrowed books"""
         self.action_results["borrowed_books"]["book_list"].configure(
             text="\n".join(self.library.user.borrowed_books)
         )
 
     def show_borrow_history(self):
+        """Toggle currently borrowed books widgets"""
         self.hide_other_action_results("borrow_history")
+
+        # Check if the widgets are not already visible
         if len(self.action_results["borrow_history"]["label"].grid_info()) == 0:
+            # Add each widget to grid (make it visible)
             for widget in self.action_results["borrow_history"].values():
                 widget.grid()
+        # Hide the widgets if they are already showing
         else:
             for widget in self.action_results["borrow_history"].values():
                 widget.grid_remove()
 
     def update_borrow_history(self):
+        """Update the book list for the user's borrowing history"""
         self.action_results["borrow_history"]["book_list"].configure(
             text="\n".join(self.library.user.borrow_history)
         )
@@ -251,35 +284,48 @@ class LibraryGUI:
         pass
 
     def show_waitlists(self):
+        """Toggle waitlist wigdets"""
         self.hide_other_action_results("waitlists")
+
+        # Check if the widgets are not already visible
         if len(self.action_results["waitlists"]["label"].grid_info()) == 0:
+            # Add each widget to grid (make it visible)
             for widget in self.action_results["waitlists"].values():
                 self.update_waitlists()
                 widget.grid()
+        # Hide the widgets if they are already showing
         else:
             for widget in self.action_results["waitlists"].values():
                 widget.grid_remove()
 
     def update_waitlists(self):
+        """Update the book list for the user's waitlists"""
         self.action_results["waitlists"]["waitlist_list"].configure(
             text="\n".join(self.library.user.waitlists)
         )
 
-    def hide_other_action_results(self, dont_hide):
+    def hide_other_action_results(self, dont_hide: str):
+        """Hide all action results apart from the one with the key matching dont_hide"""
         for key, action_result in self.action_results.items():
             if key != dont_hide:
                 for widget in action_result.values():
                     widget.grid_remove()
 
     def hide_all(self, widget_list: list[ttk.Widget]):
+        """Hide all wigets in a list of widgets"""
         for widget in widget_list:
             widget.grid_remove()
 
     def borrow_book(self):
+        """Execute the Library borrowing method & display an appropriate message"""
         self.hide_all(self.action_results["borrow_book_msgs"].values())
+
+        # Attempt to borrow book
         return_val = self.library.borrow_book(
             self.book_to_borrow.get(), self.library.user
         )
+
+        # Display message
         if return_val == 0:
             self.action_results["borrow_book_msgs"]["success_msg"].grid()
         elif return_val == 1:
@@ -290,10 +336,15 @@ class LibraryGUI:
             self.action_results["borrow_book_msgs"]["invalid_book_msg"].grid()
 
     def return_book(self):
+        """Execute the Library return method & display an appropriate message"""
         self.hide_all(self.action_results["return_book_msgs"].values())
+
+        # Attempt to return book
         return_val = self.library.return_book(
             self.book_to_return.get(), self.library.user
         )
+
+        # Display message
         if return_val == 0:
             self.action_results["return_book_msgs"]["success_msg"].grid()
         elif return_val == 1:
@@ -302,5 +353,6 @@ class LibraryGUI:
             self.action_results["return_book_msgs"]["invalid_book_msg"].grid()
 
     def quit_gui(self):
+        """Save library state to file (handled by Library class) and destroy GUI"""
         self.library.quit_library()
         self.root.destroy()
