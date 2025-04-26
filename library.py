@@ -14,6 +14,7 @@ class Library:
         users: dict[str, str] = None,
         root_path: str = PATH,
     ):
+        """Contains the backend methods for running a library system. Persistent files are saved in a folder called the library's name."""
         self.library_name = library_name
         self.books = books
         self.waitlists: dict[str, DynamicQueue] = {}
@@ -21,19 +22,28 @@ class Library:
         self.PATH = f"{root_path}/{self.library_name}"
         self.user = None
 
+        # Create the necessary folders if the main folder does not exist
+        # TODO: make this check that the subfolders exist as well
+        # TODO: put it in a separate method?
         if not os.path.isdir(f"{self.PATH}"):
             os.makedirs(f"{self.PATH}/Users")
             os.makedirs(f"{self.PATH}/Books")
             os.makedirs(f"{self.PATH}/Waitlists")
 
+        # Load books from file if none passed in
         if self.books == None:
             self.load_books()
 
+        # If users passed in, add each one to self.users
         if users != None:
             for username, password in users.items():
                 self.users.update({username: User(username, password)})
         else:
+            # If not passed in, load from file
+
+            # Gets all the user files in the user folder
             user_files = os.listdir(f"{self.PATH}/Users")
+
             for user_file in user_files:
                 username = user_file.strip(".txt")
                 self.users.update(
@@ -46,11 +56,16 @@ class Library:
                     }
                 )
 
+        # Tries to load waitlists from a file, creates new ones if they don't exist
+        # TODO: allow passing in of waitlists at instantiation (and be able to handle only some being passed in)
         if not self.load_waitlists():
             for book in self.books.keys():
                 self.waitlists.update(self.create_waitlist(book))
 
     def menu(self):
+        """Provides a CLI for a user to interact with the library"""
+
+        # Check login details
         while True:
             username = input("Enter username:\n> ")
             password = input("Enter password:\n> ")
@@ -62,6 +77,7 @@ class Library:
             else:
                 print("\nIncorrect username or pasword\n")
 
+        # Main loop
         while True:
             while True:
                 try:
