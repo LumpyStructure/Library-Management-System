@@ -236,6 +236,7 @@ class LibraryGUI:
     def show_borrow_history(self):
         self.hide_other_action_results("borrow_history")
         if len(self.action_results["borrow_history"]["label"].grid_info()) == 0:
+            self.update_borrow_history()
             for widget in self.action_results["borrow_history"].values():
                 widget.grid()
         else:
@@ -253,8 +254,8 @@ class LibraryGUI:
     def show_waitlists(self):
         self.hide_other_action_results("waitlists")
         if len(self.action_results["waitlists"]["label"].grid_info()) == 0:
+            self.update_waitlists()
             for widget in self.action_results["waitlists"].values():
-                self.update_waitlists()
                 widget.grid()
         else:
             for widget in self.action_results["waitlists"].values():
