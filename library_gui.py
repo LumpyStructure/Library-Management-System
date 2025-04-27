@@ -266,6 +266,8 @@ class LibraryGUI:
 
         # Check if the widgets are not already visible
         if len(self.action_results["borrow_history"]["label"].grid_info()) == 0:
+            self.update_borrow_history()
+
             # Add each widget to grid (make it visible)
             for widget in self.action_results["borrow_history"].values():
                 widget.grid()
@@ -289,9 +291,10 @@ class LibraryGUI:
 
         # Check if the widgets are not already visible
         if len(self.action_results["waitlists"]["label"].grid_info()) == 0:
+            self.update_waitlists()
+
             # Add each widget to grid (make it visible)
             for widget in self.action_results["waitlists"].values():
-                self.update_waitlists()
                 widget.grid()
         # Hide the widgets if they are already showing
         else:
