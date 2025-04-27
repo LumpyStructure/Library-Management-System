@@ -130,7 +130,7 @@ class Library:
             else:
                 break
 
-        self.user.save_to_file()
+        self.quit_library()
 
     def check_login(self, username: str, password: str) -> bool:
         """Checks that a given username and password are valid, returns True if they are"""
