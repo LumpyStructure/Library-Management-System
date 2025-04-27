@@ -61,9 +61,11 @@ class Library:
 
     def check_dirs(self):
         """Check that all required folders exist and create them if they don't"""
-        if not os.path.isdir(f"{self.PATH}"):
+        # Check that main folder exists
+        if not os.path.isdir(self.PATH):
             os.makedirs(self.PATH)
 
+        # Check that subfolders exist
         current_dirs = set(os.listdir(self.PATH))
         dirs_to_add = {"Books", "Users", "Waitlists"} - current_dirs
         for _dir in dirs_to_add:
