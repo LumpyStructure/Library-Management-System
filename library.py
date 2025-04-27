@@ -25,10 +25,7 @@ class Library:
         # Create the necessary folders if the main folder does not exist
         # TODO: make this check that the subfolders exist as well
         # TODO: put it in a separate method?
-        if not os.path.isdir(f"{self.PATH}"):
-            os.makedirs(f"{self.PATH}/Users")
-            os.makedirs(f"{self.PATH}/Books")
-            os.makedirs(f"{self.PATH}/Waitlists")
+        self.check_dirs()
 
         # Load books from file if none passed in
         if self.books == None:
@@ -61,6 +58,16 @@ class Library:
         if not self.load_waitlists():
             for book in self.books.keys():
                 self.waitlists.update(self.create_waitlist(book))
+
+    def check_dirs(self):
+        """Check that all required folders exist and create them if they don't"""
+        if not os.path.isdir(f"{self.PATH}"):
+            os.makedirs(self.PATH)
+
+        current_dirs = set(os.listdir(self.PATH))
+        dirs_to_add = {"Books", "Users", "Waitlists"} - current_dirs
+        for _dir in dirs_to_add:
+            os.makedirs(f"{self.PATH}/{_dir}")
 
     def menu(self):
         """Provides a CLI for a user to interact with the library"""
