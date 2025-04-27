@@ -71,8 +71,8 @@ class Library:
             password = input("Enter password:\n> ")
 
             if self.check_login(username, password):
-                user: User = self.get_user()
-                print(f"\nWelcome {user.username}\n")
+                self.user = self.get_user(username)
+                print(f"\nWelcome {self.user.username}\n")
                 break
             else:
                 print("\nIncorrect username or pasword\n")
@@ -96,7 +96,7 @@ class Library:
 
             if choice == 1:
                 book = input("Enter name of book:\n> ")
-                return_val = self.borrow_book(book, user)
+                return_val = self.borrow_book(book, self.user)
                 if return_val == 0:
                     print(f"{book} borrowed successfully")
                 elif return_val == 1:
@@ -107,18 +107,21 @@ class Library:
                     print(f"Book name invalid")
             elif choice == 2:
                 book = input("Enter name of book:\n> ")
-                if self.return_book(book, user):
+                return_val = self.return_book(book, self.user)
+                if return_val == 0:
                     print("Book returned")
-                else:
-                    print("Return failed")
+                elif return_val == 1:
+                    print("Book not borrowed")
+                elif return_val == 2:
+                    print("Book name invalid")
             elif choice == 3:
-                print(user.borrowed_books)
+                print(self.user.borrowed_books)
             elif choice == 4:
-                print(user.borrow_history.stack)
+                print(self.user.borrow_history.stack)
             else:
                 break
 
-        user.save_to_file()
+        self.user.save_to_file()
 
     def check_login(self, username: str, password: str) -> bool:
         """Checks that a given username and password are valid, returns True if they are"""
