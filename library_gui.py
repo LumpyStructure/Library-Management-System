@@ -279,7 +279,7 @@ class LibraryGUI:
     def update_borrow_history(self):
         """Update the book list for the user's borrowing history"""
         self.action_results["borrow_history"]["book_list"].configure(
-            text="\n".join(self.library.user.borrow_history)
+            text="\n".join(self.library.user.borrow_history.stack)
         )
 
     def show_available_books(self):
