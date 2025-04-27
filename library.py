@@ -19,12 +19,11 @@ class Library:
         self.books = books
         self.waitlists: dict[str, DynamicQueue] = {}
         self.users: dict[str, User] = {}
+        # Stores the set of users who have had attributes changed to know what needs to be written to file
+        self.changed_users: set[User] = set()
         self.PATH = f"{root_path}/{self.library_name}"
         self.user = None
 
-        # Create the necessary folders if the main folder does not exist
-        # TODO: make this check that the subfolders exist as well
-        # TODO: put it in a separate method?
         self.check_dirs()
 
         # Load books from file if none passed in
@@ -34,7 +33,10 @@ class Library:
         # If users passed in, add each one to self.users
         if users != None:
             for username, password in users.items():
-                self.users.update({username: User(username, password)})
+                self.users.update(
+                    {username: User(f"{self.PATH}/Users", username, password)}
+                )
+                self.changed_users.add(self.users[username])
         else:
             # If not passed in, load from file
 
@@ -46,8 +48,8 @@ class Library:
                 self.users.update(
                     {
                         username: User(
+                            f"{self.PATH}/Users",
                             username,
-                            root_path=f"{self.PATH}/Users",
                             from_file=True,
                         )
                     }
@@ -178,11 +180,12 @@ class Library:
                 # Checks if the user has exceeded their borrow limit
                 if user.borrow_book(book_name, check=True):
                     if not check:
+                        self.changed_users.add(user)
                         user.borrow_book(book_name)
                         self.books[book_name] -= 1
 
                     # If the user was on a waitlist, remove the book from the user's list of waitlists
-                    if is_from_waitlist:
+                    if is_from_waitlist and not check:
                         user.waitlists.remove(book_name)
                     return 0
                 else:
@@ -202,6 +205,7 @@ class Library:
             return 2
 
         if user.return_book(book_name):
+            self.changed_users.add(user)
             self.decrement_waitlist(book_name)
             return 0
         else:
@@ -306,7 +310,7 @@ class Library:
 
     def quit_library(self):
         """Save current library state to the appropriate files"""
-        if self.user != None:
-            self.user.save_to_file()
+        for user in self.changed_users:
+            user.save_to_file()
         self.save_books()
         self.save_waitlists()
