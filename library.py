@@ -133,10 +133,12 @@ class Library:
         except KeyError:
             return False
 
-    def get_user(self, username: str) -> User:
-        """Returns a user object from a username"""
-        # TODO: add exception handling for and invalid username
-        return self.users[username]
+    def get_user(self, username: str) -> User | None:
+        """Returns a user object from a username, or None if username is invalid"""
+        try:
+            return self.users[username]
+        except KeyError:
+            return None
 
     def borrow_book(
         self,
