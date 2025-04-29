@@ -211,7 +211,7 @@ class Library:
         else:
             return 1
 
-    def search_books(self, search):
+    def search_books(self, search: str) -> list[str]:
         search_result = []
         for book in self.books.keys():
             if search.casefold() in book.casefold():
