@@ -211,6 +211,14 @@ class Library:
         else:
             return 1
 
+    def search_books(self, search):
+        search_result = []
+        for book in self.books.keys():
+            if search.casefold() in book.casefold():
+                search_result.append(book)
+
+        return search_result
+
     def waitlist_has_users(self, book_name: str) -> bool:
         """Returns True if the waitlist for a given book has at least one user"""
         return not self.waitlists[book_name].is_empty()

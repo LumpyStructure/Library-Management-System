@@ -240,10 +240,11 @@ class LibraryGUI:
                 widget.grid_remove()
 
     def update_search_result(self):
-        pass
-
-    def search_books(self):
-        pass
+        """Update the search_result widget with the user's current search query"""
+        search_result = self.library.search_books(self.search_entry.get())
+        self.action_results["browse_books"]["search_result"].configure(
+            text="\n".join(search_result)
+        )
 
     def borrow_book_gui(self):
         """Toggle borrow book widgets"""
