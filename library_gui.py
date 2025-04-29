@@ -87,15 +87,23 @@ class LibraryGUI:
         """Create the widgets that appear when the user pressed the corresponding action button"""
         COLUMN = 3  # Column in which the widgets appear
 
-        # Set a minimum size for the column to prevent it from constantly changing size
-        self.mainframe.grid_columnconfigure(COLUMN, minsize=200)
-
         # Entry variables
+        self.search_entry = StringVar()
         self.book_to_borrow = StringVar()
         self.book_to_return = StringVar()
 
         # Action results
         self.action_results = {
+            "browse_books": {
+                "label": ttk.Label(self.mainframe, text="Browse books"),
+                "entry": ttk.Entry(self.mainframe, textvariable=self.search_entry),
+                "button": ttk.Button(
+                    self.mainframe, text="Search", command=self.update_search_result
+                ),
+                "search_result": ttk.Label(
+                    self.mainframe,
+                ),
+            },
             "borrow_book": {
                 "label": ttk.Label(self.mainframe, text="Enter book name:"),
                 "entry": ttk.Entry(self.mainframe, textvariable=self.book_to_borrow),
@@ -161,25 +169,40 @@ class LibraryGUI:
             },
         }
 
-        # Adding action results to grid
+        self.add_action_results_to_grid(COLUMN)
+
+    def add_action_results_to_grid(self, column: int):
+        """Adds action results to grid"""
+        # Set a minimum size for the column to prevent it from constantly changing size
+        self.mainframe.grid_columnconfigure(column, minsize=200)
+
+        # Browse books
+        for i, widget in enumerate(self.action_results["browse_books"].values()):
+            widget.grid(column=column, row=i)
+
+        self.action_results["browse_books"]["search_result"].grid_configure(
+            rowspan=len(self.action_buttons)
+            - (len(self.action_results["browse_books"]) - 1)
+        )
+        self.action_results["browse_books"]["button"].grid_configure(sticky=E)
 
         # Borrow book
         for i, widget in enumerate(self.action_results["borrow_book"].values()):
-            widget.grid(column=COLUMN, row=i)
+            widget.grid(column=column, row=i)
 
         for widget in self.action_results["borrow_book_msgs"].values():
-            widget.grid(column=COLUMN, row=i + 1)
+            widget.grid(column=column, row=i + 1)
 
         # Return book
         for i, widget in enumerate(self.action_results["return_book"].values()):
-            widget.grid(column=COLUMN, row=i)
+            widget.grid(column=column, row=i)
 
         for widget in self.action_results["return_book_msgs"].values():
-            widget.grid(column=COLUMN, row=i + 1)
+            widget.grid(column=column, row=i + 1)
 
         # Borrowed books
         for i, widget in enumerate(self.action_results["borrowed_books"].values()):
-            widget.grid(column=COLUMN, row=i)
+            widget.grid(column=column, row=i)
 
         self.action_results["borrowed_books"]["book_list"].grid_configure(
             rowspan=len(self.action_buttons) - 1
@@ -187,7 +210,7 @@ class LibraryGUI:
 
         # Waitlists
         for i, widget in enumerate(self.action_results["waitlists"].values()):
-            widget.grid(column=COLUMN, row=i)
+            widget.grid(column=column, row=i)
 
         self.action_results["waitlists"]["waitlist_list"].grid_configure(
             rowspan=len(self.action_buttons) - 1
@@ -195,11 +218,32 @@ class LibraryGUI:
 
         # Borrow history
         for i, widget in enumerate(self.action_results["borrow_history"].values()):
-            widget.grid(column=COLUMN, row=i)
+            widget.grid(column=column, row=i)
 
         self.action_results["borrow_history"]["book_list"].grid_configure(
             rowspan=len(self.action_buttons)
         )
+
+    def show_available_books(self):
+        """Toggle browse books widgets"""
+        self.hide_other_action_results("browse_books")
+
+        # Check if the widgets are not already visible
+        if len(self.action_results["browse_books"]["label"].grid_info()) == 0:
+            self.update_borrowed_books()
+            # Add each widget to grid (make it visible)
+            for widget in self.action_results["browse_books"].values():
+                widget.grid()
+        # Hide the widgets if they are already showing
+        else:
+            for widget in self.action_results["browse_books"].values():
+                widget.grid_remove()
+
+    def update_search_result(self):
+        pass
+
+    def search_books(self):
+        pass
 
     def borrow_book_gui(self):
         """Toggle borrow book widgets"""
@@ -281,9 +325,6 @@ class LibraryGUI:
         self.action_results["borrow_history"]["book_list"].configure(
             text="\n".join(self.library.user.borrow_history.stack)
         )
-
-    def show_available_books(self):
-        pass
 
     def show_waitlists(self):
         """Toggle waitlist wigdets"""
