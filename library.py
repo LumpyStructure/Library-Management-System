@@ -19,16 +19,12 @@ class Library:
         self.books = books
         self.waitlists: dict[str, DynamicQueue] = {}
         self.users: dict[str, User] = {}
+        # Stores the set of users who have had attributes changed to know what needs to be written to file
+        self.changed_users: set[User] = set()
         self.PATH = f"{root_path}/{self.library_name}"
         self.user = None
 
-        # Create the necessary folders if the main folder does not exist
-        # TODO: make this check that the subfolders exist as well
-        # TODO: put it in a separate method?
-        if not os.path.isdir(f"{self.PATH}"):
-            os.makedirs(f"{self.PATH}/Users")
-            os.makedirs(f"{self.PATH}/Books")
-            os.makedirs(f"{self.PATH}/Waitlists")
+        self.check_dirs()
 
         # Load books from file if none passed in
         if self.books == None:
@@ -37,7 +33,10 @@ class Library:
         # If users passed in, add each one to self.users
         if users != None:
             for username, password in users.items():
-                self.users.update({username: User(username, password)})
+                self.users.update(
+                    {username: User(f"{self.PATH}/Users", username, password)}
+                )
+                self.changed_users.add(self.users[username])
         else:
             # If not passed in, load from file
 
@@ -49,8 +48,8 @@ class Library:
                 self.users.update(
                     {
                         username: User(
+                            f"{self.PATH}/Users",
                             username,
-                            root_path=f"{self.PATH}/Users",
                             from_file=True,
                         )
                     }
@@ -61,6 +60,18 @@ class Library:
         if not self.load_waitlists():
             for book in self.books.keys():
                 self.waitlists.update(self.create_waitlist(book))
+
+    def check_dirs(self):
+        """Check that all required folders exist and create them if they don't"""
+        # Check that main folder exists
+        if not os.path.isdir(self.PATH):
+            os.makedirs(self.PATH)
+
+        # Check that subfolders exist
+        current_dirs = set(os.listdir(self.PATH))
+        dirs_to_add = {"Books", "Users", "Waitlists"} - current_dirs
+        for _dir in dirs_to_add:
+            os.makedirs(f"{self.PATH}/{_dir}")
 
     def menu(self):
         """Provides a CLI for a user to interact with the library"""
@@ -121,7 +132,7 @@ class Library:
             else:
                 break
 
-        self.user.save_to_file()
+        self.quit_library()
 
     def check_login(self, username: str, password: str) -> bool:
         """Checks that a given username and password are valid, returns True if they are"""
@@ -133,10 +144,12 @@ class Library:
         except KeyError:
             return False
 
-    def get_user(self, username: str) -> User:
-        """Returns a user object from a username"""
-        # TODO: add exception handling for and invalid username
-        return self.users[username]
+    def get_user(self, username: str) -> User | None:
+        """Returns a user object from a username, or None if username is invalid"""
+        try:
+            return self.users[username]
+        except KeyError:
+            return None
 
     def borrow_book(
         self,
@@ -167,11 +180,12 @@ class Library:
                 # Checks if the user has exceeded their borrow limit
                 if user.borrow_book(book_name, check=True):
                     if not check:
+                        self.changed_users.add(user)
                         user.borrow_book(book_name)
                         self.books[book_name] -= 1
 
                     # If the user was on a waitlist, remove the book from the user's list of waitlists
-                    if is_from_waitlist:
+                    if is_from_waitlist and not check:
                         user.waitlists.remove(book_name)
                     return 0
                 else:
@@ -191,10 +205,19 @@ class Library:
             return 2
 
         if user.return_book(book_name):
+            self.changed_users.add(user)
             self.decrement_waitlist(book_name)
             return 0
         else:
             return 1
+
+    def search_books(self, search: str) -> list[str]:
+        search_result = []
+        for book in self.books.keys():
+            if search.casefold() in book.casefold():
+                search_result.append(book)
+
+        return search_result
 
     def waitlist_has_users(self, book_name: str) -> bool:
         """Returns True if the waitlist for a given book has at least one user"""
@@ -295,7 +318,7 @@ class Library:
 
     def quit_library(self):
         """Save current library state to the appropriate files"""
-        if self.user != None:
-            self.user.save_to_file()
+        for user in self.changed_users:
+            user.save_to_file()
         self.save_books()
         self.save_waitlists()

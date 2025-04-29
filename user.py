@@ -4,8 +4,8 @@ from dynamic_stack import DynamicStack
 class User:
     def __init__(
         self,
-        username: str,
         root_path: str,
+        username: str,
         password: str = None,
         borrow_limit: int = 10,
         from_file: bool = False,
